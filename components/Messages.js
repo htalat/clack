@@ -5,6 +5,8 @@ var Messages = React.createClass({
 
     render: function()
     {
+      if(!this.props.messages){return null;}
+
       var messageList = this.props.messages.map(function(message,i){
         var text = message.text;
         return(
@@ -15,7 +17,7 @@ var Messages = React.createClass({
           </div>
         )
       });
-      
+
       return(
         <div id="message-list">
           <div className="time-divide">

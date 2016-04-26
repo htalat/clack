@@ -15,46 +15,74 @@ const customStyles = {
   }
 };
 
+const DEFAULT_CHANNEL = "general"
 
 var Chat = React.createClass({
 
    getInitialState: function(){
      return {
        name: null,
-       messages:[{
-         name: 'jay-z',
-         time: new Date(),
-         text: 'whazz the happy happzzz?'
-       },
-       {
-         name: 'm',
-         time: new Date(),
-         text: 'mey mey mey mey'
-       }],
-       channels:['general']
+       messages:{},
+       channels:[],
+       currentChannel: null
      };
 
    },
+
+   componentDidMount:function(){
+     this.createChannel(DEFAULT_CHANNEL)
+     var messages={};
+     messages[DEFAULT_CHANNEL] = [
+       {
+          name:'jz',
+          time: new Date(),
+          text: "kkksds"
+       },
+       {
+          name:'m',
+          time: new Date(),
+          text:"fff"
+       }
+     ]
+     this.setState({messages:messages,currentChannel:DEFAULT_CHANNEL});
+   },
+
 
    componentDidUpdate:function(){
       $("#message-list").scrollTop($("#message-list")[0].scrollHeight);
    },
 
-  sendMessage: function(){
-    var text = event.target.value;
-    //13 -> enter key
-    if(event.keyCode == 13 && text!== '')
-    {
-      var message ={
-        name:this.state.name,
-        time: new Date(),
-        text: text
+  sendMessage: function(event){
+     var text = event.target.value;
+     if(event.keyCode == 13 && text !== "") {
+       var message = {
+         name: this.state.name,
+          text: text,
+          time: new Date()
+        }
+
+        var messages = this.state.messages
+         messages[this.state.currentChannel].push(message);
+         this.setState({ messages: messages});
+          $('#msg-input').val("");
       }
+  },
+  createChannel: function(channelName){
 
-      this.setState({messages: this.state.messages.concat(message)});
-      $('#msg-input').val('');
+    if(!(channelName in this.state.channels)){
+
+      var messages = this.state.messages;
+      messages[channelName]=[];
+      this.setState({
+        channels:this.state.channels.concat(channelName),
+        messages:messages
+      });
+      this.joinChannel(channelName);
     }
+  },
 
+  joinChannel: function(channelName){
+    this.setState({currentChannel:channelName});
   },
 
   enterName: function(event)
@@ -92,24 +120,28 @@ var Chat = React.createClass({
                   <div className="channel-menu">
                     <span className="channel-menu_name">
                       <span className="channel-menu_prefix">#</span>
-                      general
+                      {this.state.currentChannel}
                     </span>
                   </div>
                 </div>
                 <div className="main">
                   <div className="listings">
-                    <Channels channels={this.state.channels} />
+                    <Channels channels={this.state.channels}
+                              createChannel={this.createChannel}
+                              currentChannel={this.state.currentChannel}
+                              joinChannel={this.joinChannel}
+                              />
                   </div>
                   <div className="message-history">
-                    <Messages messages={this.state.messages} />
+                    <Messages messages={this.state.messages[this.state.currentChannel]} />
                   </div>
                 </div>
                 <div className="footer">
                   <div className="user-menu">
                     <p className="disclaimer">This demo is not created by, affiliated with, or supported by Slack Technologies, Inc.</p>
                   </div>
-                  <div className="input-box" onKeyDown={this.sendMessage}>
-                    <input id="msg-input" type="text" className="input-box_text" />
+                  <div className="input-box" >
+                    <input id="msg-input" type="text" className="input-box_text" onKeyDown={this.sendMessage}/>
                   </div>
                 </div>
 
