@@ -2,6 +2,7 @@ var React = require('react')
 var ReactDOM = require('react-dom')
 var Messages = require('./Messages')
 var Channels = require('./Channels')
+var Users = require('./Users')
 var Modal = require('react-modal')
 
 const customStyles = {
@@ -24,22 +25,22 @@ var Chat = React.createClass({
        name: null,
        messages:{},
        channels:{},
+       users:{},
        currentChannel: null
      };
 
    },
 
    componentDidMount:function(){
-     this.createChannel(DEFAULT_CHANNEL)
-     var messages={};
-     messages[DEFAULT_CHANNEL] = [
 
-     ]
-     this.setState({messages:messages,currentChannel:DEFAULT_CHANNEL});
+  //   var messages={};
+  //   messages[DEFAULT_CHANNEL] = [
+
+  //   ]
+     //this.setState({messages:messages,currentChannel:DEFAULT_CHANNEL});
    },
 
    componentWillMount:function(){
-     this.pusher = new Pusher(PUSHER_CHAT_APP_KEY);
      this.chatRooms={};
    },
 
@@ -76,7 +77,7 @@ var Chat = React.createClass({
         messages:messages
       });
       this.joinChannel(channelName);
-      this.chatRooms[channelName] = this.pusher.subscribe(channelName);
+      this.chatRooms[channelName] = this.pusher.subscribe("presence-"+channelName);
       this.chatRooms[channelName].bind('new_message',function(message){
         var messages = this.state.messages;
         var channels = this.state.channels;
@@ -87,6 +88,28 @@ var Chat = React.createClass({
         }
         this.setState({messages: messages, channels: channels})
       },this);
+
+      //populating online-users
+      this.chatRooms[channelName].bind('pusher:subscription_succeeded', function(data){
+          var users = this.state.users;
+          users[channelName] = Object.keys(data.members);
+          this.setState({users:users});
+      },this);
+
+      //handle member joined channel events
+      this.chatRooms[channelName].bind('pusher:member_added',function(user){
+          var users = this.state.users;
+          users[channelName]= users[channelName].concat(user.id);
+          this.setState({users:users});
+      },this);
+      //handle memeber left channel events
+      this.chatRooms[channelName].bind('pusher:member_removed',function(user){
+          var users = this.state.users;
+          i = users[channelName].indexOf(user.id)
+          users[channelName].splice(i,1)
+          this.setState({users:users});
+      },this);
+
     }
   },
 
@@ -104,7 +127,16 @@ var Chat = React.createClass({
       newName = "anonymous" + randomId;
     }
 
+    $.ajax({
+      type: 'POST',
+      url:'/setname/',
+      data: {name:newName},
+      async:false
+    })
+    this.pusher = new Pusher(PUSHER_CHAT_APP_KEY, {authEndpoint:'pusher/auth/'});
     this.setState({name:newName});
+
+    this.createChannel(DEFAULT_CHANNEL)
 
   },
   onEnter: function(event)
@@ -142,6 +174,9 @@ var Chat = React.createClass({
                               currentChannel={this.state.currentChannel}
                               joinChannel={this.joinChannel}
                               />
+                  </div>
+                  <div className="online-users" >
+                    <Users users={this.state.users[this.state.currentChannel]}/>
                   </div>
                   <div className="message-history">
                     <Messages messages={this.state.messages[this.state.currentChannel]} />
