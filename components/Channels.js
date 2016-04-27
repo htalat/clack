@@ -50,17 +50,29 @@ var Channels = React.createClass({
   {
     var currentChannel = this.props.currentChannel;
     var channelList = [];
-    for (i=0; i < this.props.channels.length; i++ ) {
+    /*for (i=0; i < this.props.channels.length; i++ ) {
+      var unreadCounter = this.props.channels[channel].unreadCounter;
       var channel = this.props.channels[i];
       channelList.push(
         <li key={channel} className={channel===  currentChannel ? 'channel active' : 'channel'} onClick={this.switchChannel.bind(this, channel)}>
             <a className="channel_name">
-                <span className="unread">0</span>
+                <span className={unreadCount == 0 ? 'hidden' : 'unread'}> {unreadCount}</span>
                 <span><span className="prefix">#</span>{channel}</span>
             </a>
         </li>
       )
-    }
+    }*/
+    for (channel in this.props.channels) {
+            var unreadCount = this.props.channels[channel].unreadCounter;
+            channelList.push(
+                <li key={channel} className={channel === currentChannel ? 'channel active': 'channel'} onClick={this.switchChannel.bind(this, channel)}>
+                    <a className="channel_name">
+                        <span className={unreadCount == 0 ? 'hidden' : 'unread'}> { unreadCount } </span>
+                        <span><span className="prefix">#</span>{channel}</span>
+                    </a>
+                </li>
+            )
+        }
     return(
       <div className="listings_channels">
       <span className="add_icon" onClick={this.openModal}>+</span>

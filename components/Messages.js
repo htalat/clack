@@ -12,7 +12,7 @@ var Messages = React.createClass({
         return(
           <div key ={i} className="message">
             {message.name}
-            <span className="message_timestamp"> {message.time.toLocaleTimeString()}</span>
+            <span className="message_timestamp"> {new Date(message.time).toLocaleTimeString()}</span>
             <span className="message_content" dangerouslySetInnerHTML={{__html:text}}></span>
           </div>
         )

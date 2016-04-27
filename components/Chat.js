@@ -23,7 +23,7 @@ var Chat = React.createClass({
      return {
        name: null,
        messages:{},
-       channels:[],
+       channels:{},
        currentChannel: null
      };
 
@@ -33,56 +33,67 @@ var Chat = React.createClass({
      this.createChannel(DEFAULT_CHANNEL)
      var messages={};
      messages[DEFAULT_CHANNEL] = [
-       {
-          name:'jz',
-          time: new Date(),
-          text: "kkksds"
-       },
-       {
-          name:'m',
-          time: new Date(),
-          text:"fff"
-       }
+
      ]
      this.setState({messages:messages,currentChannel:DEFAULT_CHANNEL});
    },
 
+   componentWillMount:function(){
+     this.pusher = new Pusher(PUSHER_CHAT_APP_KEY);
+     this.chatRooms={};
+   },
 
    componentDidUpdate:function(){
       $("#message-list").scrollTop($("#message-list")[0].scrollHeight);
    },
 
   sendMessage: function(event){
-     var text = event.target.value;
-     if(event.keyCode == 13 && text !== "") {
-       var message = {
-         name: this.state.name,
-          text: text,
-          time: new Date()
-        }
+       var text = event.target.value;
+       if(event.keyCode == 13 && text !== "") {
+         var message = {
+           name: this.state.name,
+            text: text,
+            channel:this.state.currentChannel
+          };
 
-        var messages = this.state.messages
-         messages[this.state.currentChannel].push(message);
-         this.setState({ messages: messages});
-          $('#msg-input').val("");
+      $.post('/messages/',message).success(function(){
+        $('#msg-input').val('');
+      });
+
       }
   },
   createChannel: function(channelName){
 
     if(!(channelName in this.state.channels)){
 
+      var channels = this.state.channels
+      channels[channelName] = {unreadCounter:0}
+
       var messages = this.state.messages;
       messages[channelName]=[];
       this.setState({
-        channels:this.state.channels.concat(channelName),
+        channels:channels,
         messages:messages
       });
       this.joinChannel(channelName);
+      this.chatRooms[channelName] = this.pusher.subscribe(channelName);
+      this.chatRooms[channelName].bind('new_message',function(message){
+        var messages = this.state.messages;
+        var channels = this.state.channels;
+
+        messages[channelName].push(message);
+        if(channelName != this.state.currentChannel){
+          channels[channelName].unreadCounter++;
+        }
+        this.setState({messages: messages, channels: channels})
+      },this);
     }
   },
 
   joinChannel: function(channelName){
-    this.setState({currentChannel:channelName});
+    var channels = this.state.channels;
+    channels[channelName].unreadCounter = 0;
+    this.setState({currentChannel:channelName,channels: channels});
   },
 
   enterName: function(event)
